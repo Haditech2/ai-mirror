@@ -1,0 +1,61 @@
+{% extends "mirror/kiosk/base.html" %}
+{% load static %}
+{% block title %}Choose a gown · The Academic Mirror{% endblock %}
+{% block inactivity %}true{% endblock %}
+{% block screen %}
+<section class="screen" id="gown-screen">
+  {% include "mirror/includes/kiosk_header.html" with step=2 label="Gown" %}
+  {% if gowns %}
+  <form method="post" class="screen__body">
+    {% csrf_token %}
+    <div class="screen__intro">
+      <h1 class="h1">Academic gowns to wear</h1>
+      <p class="lead">{{ gowns|length }} gowns in the collection. Swipe the picture or use the arrows, then choose the one you want.</p>
+    </div>
+    <div class="stage stage--gowns">
+      {% for gown in gowns %}
+      <article class="gown{% if gown.cap_image_path %} gown--cap{% endif %}{% if not gown.kiosk_selected %} hidden{% endif %}" data-gown-id="{{ gown.pk }}">
+        <div class="gown__picture">
+          {% if gown.cap_image_path %}<img class="gown__cap" src="{% url 'guest:gown-cap-image' gown.pk %}?v={{ gown.updated_at|date:'U' }}" alt="">{% endif %}
+          <img class="stage__fit" src="{% url 'guest:gown-image' gown.pk %}?v={{ gown.updated_at|date:'U' }}" alt="{{ gown.name }}">
+        </div>
+        <div class="gown__info">
+          <p class="gown__count">{{ forloop.counter }} of {{ gowns|length }}</p>
+          <h2 class="h2">{{ gown.name }}</h2>
+          <p class="gown__colour">{{ gown.color }}</p>
+          {% if gown.cap_image_path %}<div class="gown__tags"><span class="chip">Cap included</span></div>{% endif %}
+          <p class="gown__desc">{{ gown.description }}</p>
+        </div>
+      </article>
+      {% endfor %}
+      <div class="gown-nav">
+        <button id="previous-gown" type="button" class="btn btn--secondary btn--icon" aria-label="Previous gown"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button id="next-gown" type="button" class="btn btn--secondary btn--icon" aria-label="Next gown"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+    </div>
+    <div class="thumbs" role="radiogroup" aria-label="Gowns">
+      {% for gown in gowns %}
+      <label class="thumb{% if gown.kiosk_selected %} is-active{% endif %}">
+        <input type="radio" name="gown" value="{{ gown.pk }}" {% if gown.kiosk_selected %}checked{% endif %}>
+        <img src="{% url 'guest:gown-image' gown.pk %}?v={{ gown.updated_at|date:'U' }}" alt="{{ gown.name }}">
+      </label>
+      {% endfor %}
+    </div>
+    {% if form.errors %}<p class="notice notice--error" role="alert">Choose a gown from the collection to continue.</p>{% endif %}
+    <div class="actions">
+      <a href="{% url 'guest:camera' %}" class="btn btn--secondary">Retake photo</a>
+      <button type="submit" class="btn btn--primary">Wear this gown</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="screen__body">
+    <div class="end">
+      <h1 class="h1">No gowns are available yet</h1>
+      <p class="lead">An event host needs to switch on at least one gown in the console.</p>
+      <a class="btn btn--secondary" href="{% url 'guest:camera' %}">Back to the camera</a>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}<script src="{% static 'mirror/js/gowns.js' %}" defer></script>{% endblock %}

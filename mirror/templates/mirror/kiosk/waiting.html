@@ -1,0 +1,45 @@
+{% extends "mirror/kiosk/base.html" %}
+{% load static %}
+{% block title %}Creating your portrait · The Academic Mirror{% endblock %}
+{% block inactivity %}{% if refresh %}false{% else %}true{% endif %}{% endblock %}
+{% block head %}{% if refresh %}<noscript><meta http-equiv="refresh" content="3"></noscript>{% endif %}{% endblock %}
+{% block screen %}
+<section class="screen">
+  {% include "mirror/includes/kiosk_header.html" with step=3 label="Portrait" %}
+  <div class="screen__body">
+  {% if refresh %}
+    <div id="atelier-wait" class="wait" data-status-url="{{ request.path }}" data-has-cap="{% if portrait.gown.cap_image_path %}true{% endif %}" data-started="{{ job.started_at|default:portrait.created_at|date:'U' }}" data-expected="45">
+      {% if portrait.photo.storage_path %}
+      <div class="wait__photos">
+        <div class="stage"><img class="stage__fill" src="{% url 'guest:capture-preview' portrait.photo_id %}" alt="Your photo"></div>
+        <div class="wait__gown"><img src="{% url 'guest:gown-image' portrait.gown_id %}" alt="{{ portrait.gown.name }}"></div>
+      </div>
+      {% endif %}
+      <div class="screen__intro">
+        <h1 class="h1">{% if portrait.status == 'queued' %}Your portrait is in the queue{% else %}Fitting the {{ portrait.gown.name }}{% endif %}</h1>
+        <p class="lead">Usually under a minute. Please stay here; your portrait appears on this screen.</p>
+      </div>
+      <div class="progress" aria-hidden="true">
+        <div class="progress__track"><span id="atelier-progress-bar"></span></div>
+        <p id="atelier-stage" class="progress__stage">Reading your pose</p>
+        <p class="progress__meta"><span>{% if portrait.status == 'queued' and queue_position %}Number {{ queue_position }} in the queue{% else %}Processing securely{% endif %}</span><span id="atelier-elapsed"></span></p>
+      </div>
+    </div>
+  {% else %}
+    <div class="end">
+      <h1 class="h1">This portrait could not be created</h1>
+      <p class="lead">{{ portrait.error_message|default:"The portrait service did not finish this image. No portrait was saved." }}</p>
+      <div class="actions actions--split">
+        <a href="{% url 'guest:gowns' %}" class="btn btn--secondary">Choose another gown</a>
+        {% if portrait.error_code == 'pose_not_found' or portrait.error_code == 'too_close' %}
+        <a href="{% url 'guest:camera' %}" class="btn btn--primary">Retake photo</a>
+        {% else %}
+        <form method="post" action="{% url 'guest:generate' %}">{% csrf_token %}<button class="btn btn--primary" type="submit">Try the portrait again</button></form>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}{% if refresh %}<script src="{% static 'mirror/js/waiting.js' %}" defer></script>{% endif %}{% endblock %}

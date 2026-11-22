@@ -1,0 +1,31 @@
+{% extends "mirror/kiosk/base.html" %}
+{% block title %}Create your portrait · The Academic Mirror{% endblock %}
+{% block inactivity %}true{% endblock %}
+{% block screen %}
+<section class="screen">
+  {% include "mirror/includes/kiosk_header.html" with step=3 label="Portrait" %}
+  <div class="screen__body">
+    <div class="screen__intro">
+      <h1 class="h1">Your photo in the {{ gown.name }}</h1>
+      <p class="lead">The portrait takes about a minute. Your face stays exactly as photographed; only the gown{% if gown.cap_image_path %} and cap{% endif %} are added.</p>
+    </div>
+    <div class="pair">
+      <div class="stage"><img class="stage__fill" src="{% url 'guest:capture-preview' photo.pk %}" alt="Your photo"></div>
+      <div class="stage stage--gown{% if gown.cap_image_path %} has-cap{% endif %}">
+        {% if gown.cap_image_path %}<img class="stage__cap" src="{% url 'guest:gown-cap-image' gown.pk %}" alt="">{% endif %}
+        <img class="stage__fit" src="{% url 'guest:gown-image' gown.pk %}" alt="{{ gown.name }}">
+      </div>
+    </div>
+    {% if not ai_available %}
+    <div class="notice" role="status">
+      <strong>Portraits are paused</strong>
+      <span>The portrait service is not set up yet. An event host can switch it on in the console settings.</span>
+    </div>
+    {% endif %}
+    <div class="actions">
+      <a href="{% url 'guest:gowns' %}" class="btn btn--secondary">Change gown</a>
+      <form method="post" action="{% url 'guest:generate' %}">{% csrf_token %}<button type="submit" class="btn btn--primary" {% if not ai_available %}disabled{% endif %}>Create my portrait</button></form>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "mirror/kiosk/base.html" %}
+{% block title %}Your portrait · The Academic Mirror{% endblock %}
+{% block inactivity %}true{% endblock %}
+{% block screen %}
+<section class="screen">
+  {% include "mirror/includes/kiosk_header.html" with step=4 label="Keep it" %}
+  <div class="screen__body">
+    <div class="screen__intro">
+      <h1 class="h1">Your portrait in the {{ portrait.gown.name }}</h1>
+    </div>
+    <div class="reveal">
+      <div class="reveal__portrait"><img src="{{ portrait_url }}" alt="Your portrait in the {{ portrait.gown.name }}"></div>
+      <aside class="take">
+        <h2 class="h2">Save it to your phone</h2>
+        <p class="small">Point your phone camera at the code. The link is private to you.</p>
+        <img class="qr" src="{{ qr_data_uri }}" alt="QR code linking to your portrait download">
+        <a href="{{ download_url }}" class="btn btn--primary">Save portrait</a>
+        <a href="{% url 'guest:portrait-delete' portrait.pk %}" class="btn btn--secondary">Delete portrait</a>
+      </aside>
+    </div>
+    <div class="actions actions--stack">
+      <a href="{% url 'guest:gowns' %}" class="btn btn--secondary">Try another gown</a>
+      <a href="{% url 'guest:camera' %}" class="btn btn--secondary">Retake photo</a>
+      <form method="post" action="{% url 'guest:end-session' %}">{% csrf_token %}<input type="hidden" name="reason" value="completed"><button type="submit" class="btn btn--secondary">Finish session</button></form>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "mirror/kiosk/base.html" %}
+{% load static %}
+{% block title %}The Academic Mirror · {{ event.event_title }}{% endblock %}
+{% block screen %}
+<section class="screen">
+  {% include "mirror/includes/kiosk_header.html" %}
+  <div class="screen__body">
+    <div class="welcome">
+      <div class="welcome__photo">
+        {% if event.background_path %}
+          <img src="{% url 'guest:event-asset' 'background' %}" alt="">
+        {% else %}
+          <img src="{% static 'professor-rashidah-portrait.jpg' %}" alt="{{ event.professor_name }} in academic regalia">
+        {% endif %}
+      </div>
+      <div class="welcome__text" data-enter>
+        <p class="eyebrow">{{ event.event_title }} of {{ event.professor_name }} · {{ event.event_date|date:"j F Y" }}</p>
+        <h1 class="h1">{{ event.welcome_headline }}</h1>
+        <p class="lead">{{ event.welcome_text }}</p>
+      </div>
+      <div class="welcome__cta" data-enter>
+        <a href="{% url 'guest:consent' %}" class="btn btn--primary">Start your portrait</a>
+        <p class="note">About two minutes. Your camera photo is deleted when you finish.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

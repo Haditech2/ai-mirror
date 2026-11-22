@@ -1,0 +1,16 @@
+{% extends "mirror/kiosk/base.html" %}
+{% block title %}Session finished · The Academic Mirror{% endblock %}
+{% block head %}<meta http-equiv="refresh" content="7;url={% url 'guest:welcome' %}">{% endblock %}
+{% block screen %}
+<section class="screen">
+  {% include "mirror/includes/kiosk_header.html" %}
+  <div class="screen__body">
+    <div class="end">
+      <p class="eyebrow">Session finished</p>
+      <h1 class="h1">Thank you for joining the {{ event.event_title }}</h1>
+      <p class="lead">Your camera photo is deleted from this kiosk. Your portrait stays available through your QR link while the event keeps it.</p>
+      <p class="chip">The next guest can start in <span id="completion-countdown">7</span> seconds</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

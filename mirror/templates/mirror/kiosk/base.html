@@ -1,0 +1,29 @@
+{% extends "mirror/base.html" %}
+{% load static %}
+{% block theme_color %}#f5f0e6{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{% static 'mirror/css/kiosk.css' %}">{% endblock %}
+{% block body %}
+<main
+  class="kiosk"
+  id="guest-kiosk"
+  aria-live="polite"
+  data-inactivity="{% block inactivity %}false{% endblock %}"
+  data-timeout="{{ event.inactivity_timeout_seconds|default:120 }}"
+>
+  {% if messages %}
+    <div class="messages">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>
+  {% endif %}
+  {% block screen %}{% endblock %}
+  <div id="offline-banner" class="offline hidden" role="status"><span class="dot"></span> No network connection</div>
+  <div id="timeout-warning" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="timeout-title">
+    <div class="panel">
+      <h2 id="timeout-title" class="h2">Session ending in <span id="timeout-seconds">15</span> seconds</h2>
+      <p class="lead">For your privacy, the kiosk closes a session nobody is using and deletes the camera photo.</p>
+      <button id="timeout-continue" type="button" class="btn btn--primary">Keep my session</button>
+    </div>
+  </div>
+  <form id="inactivity-form" method="post" action="{% url 'guest:end-session' %}" class="hidden">
+    {% csrf_token %}<input type="hidden" name="reason" value="inactive">
+  </form>
+</main>
+{% endblock %}

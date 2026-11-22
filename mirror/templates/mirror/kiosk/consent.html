@@ -1,0 +1,37 @@
+{% extends "mirror/kiosk/base.html" %}
+{% block title %}Photo consent · The Academic Mirror{% endblock %}
+{% block screen %}
+<section class="screen">
+  {% include "mirror/includes/kiosk_header.html" %}
+  <form method="post" class="screen__body">
+    {% csrf_token %}
+    <div class="screen__intro">
+      <h1 class="h1">Consent for your photo</h1>
+      <p class="lead">{{ event.privacy_notice }}</p>
+    </div>
+    <dl class="facts">
+      <div>
+        <dt>Used only for your portrait</dt>
+        <dd>Your photo goes to the portrait service and nowhere else. It is never used to identify you.</dd>
+      </div>
+      <div>
+        <dt>Deleted after your session</dt>
+        <dd>The camera photo is cleared when you finish. Finished portraits follow the event's deletion policy.</dd>
+      </div>
+      <div>
+        <dt>Your face is not changed</dt>
+        <dd>The portrait keeps your face exactly as photographed. Only the gown is added.</dd>
+      </div>
+    </dl>
+    <label class="check">
+      <input type="checkbox" name="consent" required>
+      <span>I agree to the capture and AI processing of my photo for this portrait.</span>
+    </label>
+    {% if form.errors %}<p class="notice notice--error" role="alert">Tick the box to agree before you continue.</p>{% endif %}
+    <div class="actions push">
+      <a href="{% url 'guest:welcome' %}" class="btn btn--secondary">Back</a>
+      <button type="submit" class="btn btn--primary">Agree and continue</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

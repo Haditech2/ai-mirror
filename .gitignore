@@ -1,0 +1,27 @@
+# Environment and secrets
+.env
+*.env.local
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.db
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+staticfiles/*
+!staticfiles/.gitkeep
+
+# Private runtime images
+storage/photos/
+storage/portraits/
+storage/event/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

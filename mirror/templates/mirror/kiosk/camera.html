@@ -1,0 +1,49 @@
+{% extends "mirror/kiosk/base.html" %}
+{% load static %}
+{% block title %}Take your photo · The Academic Mirror{% endblock %}
+{% block inactivity %}true{% endblock %}
+{% block screen %}
+<section class="screen" id="camera-screen" data-heartbeat-url="{% url 'guest:camera-heartbeat' %}">
+  {% include "mirror/includes/kiosk_header.html" with step=1 label="Photo" %}
+  <div class="screen__body">
+    <div class="screen__intro">
+      <h1 class="h1">Your photo for the portrait</h1>
+      <p class="lead">Face the camera with your head, both shoulders, and chest visible. The camera takes the photo after a three-second countdown.</p>
+    </div>
+    <div class="stage stage--camera">
+      <div class="viewfinder">
+        <video id="camera-video" class="stage__fill" autoplay muted playsinline></video>
+        <img id="camera-preview" class="stage__fill hidden" alt="The photo you just took">
+      </div>
+      <div id="camera-loading" class="stage__overlay stage__overlay--solid grid">
+        <p class="lead">Starting the camera…</p>
+      </div>
+      <div id="camera-error" class="stage__overlay stage__overlay--solid hidden">
+        <div class="overlay-copy">
+          <h2 class="h2">Camera not available</h2>
+          <p id="camera-error-message" class="lead"></p>
+          <button id="camera-retry" type="button" class="btn btn--secondary">Try the camera again</button>
+        </div>
+      </div>
+      <div id="camera-countdown" class="stage__overlay stage__overlay--dim hidden">
+        <div id="camera-countdown-number" class="countdown">3</div>
+      </div>
+      <p id="captured-label" class="stage__tag chip chip--ok hidden"><span class="dot"></span> Photo taken</p>
+    </div>
+    {% if form.errors %}<p class="notice notice--error" role="alert">{{ form.photo.errors|striptags|default:"The photo could not be saved. Take it again." }}</p>{% endif %}
+    <div id="capture-controls" class="actions">
+      <form method="post" action="{% url 'guest:end-session' %}">{% csrf_token %}<input type="hidden" name="reason" value="cancelled"><button class="btn btn--secondary" type="submit">Cancel</button></form>
+      <button id="capture-button" type="button" class="btn btn--primary" disabled>Take photo</button>
+    </div>
+    <div id="preview-controls" class="actions actions--split hidden">
+      <button id="retake-button" type="button" class="btn btn--secondary">Retake photo</button>
+      <button id="accept-photo-button" type="button" class="btn btn--primary">Use this photo</button>
+    </div>
+  </div>
+  <form id="photo-upload-form" method="post" enctype="multipart/form-data" class="hidden">
+    {% csrf_token %}<input id="photo-upload-input" type="file" name="photo" accept="image/jpeg,image/png,image/webp">
+  </form>
+  <form id="heartbeat-form" class="hidden">{% csrf_token %}</form>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{% static 'mirror/js/camera.js' %}" defer></script>{% endblock %}

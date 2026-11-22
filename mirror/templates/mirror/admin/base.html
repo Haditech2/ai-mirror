@@ -1,0 +1,35 @@
+{% extends "mirror/base.html" %}
+{% load static %}
+{% block title %}{% block admin_title %}Event console{% endblock %} · The Academic Mirror{% endblock %}
+{% block body %}
+<div class="admin-shell flex" id="admin-shell">
+  <button id="admin-nav-overlay" class="fixed inset-0 z-40 hidden bg-black/60 lg:hidden" type="button" aria-label="Close navigation"></button>
+  <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col border-r border-white/8 bg-[#08111f] p-5 transition-transform lg:translate-x-0">
+    <div class="flex items-center justify-between px-2 py-3">
+      <a href="{% url 'console:dashboard' %}" class="flex items-center gap-3 text-ivory"><div class="relative grid h-11 w-11 place-items-center rounded-full border border-champagne-300/45"><span class="font-display text-xl font-semibold text-champagne-300">AM</span></div><div><p class="text-[9px] font-semibold uppercase tracking-[.34em] text-champagne-300/70">The Academic</p><p class="font-display text-xl leading-none tracking-wide">Mirror</p></div></a>
+      <button id="admin-nav-close" type="button" class="rounded-xl p-2 text-slate-400 lg:hidden" aria-label="Close navigation">×</button>
+    </div>
+    <div class="relative mt-6 overflow-hidden rounded-2xl border border-champagne-300/15 bg-champagne-300/[.06] p-4">
+      <img src="{% static 'professor-rashidah-mark.webp' %}" alt="" class="absolute -bottom-5 -right-3 h-28 w-auto opacity-40"><div class="relative max-w-[70%]"><p class="text-[9px] font-bold uppercase tracking-[.24em] text-champagne-300/60">Event console</p><p class="mt-2 text-sm font-semibold leading-5 text-white">{{ event_settings.event_title|default:"Inaugural Lecture" }} {{ event_settings.event_date|date:"Y" }}</p><div class="mt-3 flex items-center gap-2 text-[10px] text-emerald-300/70"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Administration online</div></div>
+    </div>
+    <nav class="mt-6 space-y-1.5">
+      <a href="{% url 'console:dashboard' %}" class="admin-nav-link {% if section == 'dashboard' %}admin-nav-active{% endif %}"><span>▥</span> Overview</a>
+      <a href="{% url 'console:gowns' %}" class="admin-nav-link {% if section == 'gowns' %}admin-nav-active{% endif %}"><span>♜</span> Gown collection</a>
+      <a href="{% url 'console:portraits' %}" class="admin-nav-link {% if section == 'portraits' %}admin-nav-active{% endif %}"><span>▧</span> Portrait library</a>
+      <a href="{% url 'console:settings' %}" class="admin-nav-link {% if section == 'settings' %}admin-nav-active{% endif %}"><span>⚙</span> Event settings</a>
+      <a href="{% url 'console:monitoring' %}" class="admin-nav-link {% if section == 'monitoring' %}admin-nav-active{% endif %}"><span>◉</span> System monitor</a>
+    </nav>
+    <div class="mt-auto space-y-2 pt-6">
+      <a href="{% url 'guest:welcome' %}" class="flex min-h-11 items-center gap-3 rounded-xl px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 transition hover:bg-white/5 hover:text-white">‹ Open guest kiosk</a>
+      <form method="post" action="{% url 'console:logout' %}">{% csrf_token %}<button type="submit" class="flex min-h-11 w-full items-center gap-3 rounded-xl px-4 text-xs font-semibold uppercase tracking-wider text-rose-300/65 transition hover:bg-rose-500/10 hover:text-rose-200">↪ Sign out securely</button></form>
+    </div>
+  </aside>
+  <div class="min-w-0 flex-1 lg:pl-72">
+    <div class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/8 bg-[#060c17]/85 px-5 backdrop-blur-xl lg:hidden"><span class="font-display text-xl text-white">The Academic Mirror</span><button id="admin-nav-open" type="button" class="rounded-xl border border-white/10 p-2.5 text-white" aria-label="Open navigation">☰</button></div>
+    <main class="mx-auto max-w-[1500px] p-5 sm:p-8 xl:p-12">
+      {% if messages %}<div class="mb-5 space-y-2">{% for message in messages %}<div class="rounded-xl border {% if message.tags == 'error' %}border-rose-400/20 bg-rose-400/10 text-rose-100{% else %}border-emerald-400/20 bg-emerald-400/10 text-emerald-100{% endif %} p-3 text-sm">{{ message }}</div>{% endfor %}</div>{% endif %}
+      {% block admin_content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+Django==6.0.9
+Pillow==12.3.0
+httpx==0.28.1
+cryptography==46.0.3
+argon2-cffi==25.1.0
+qrcode[pil]==8.2
+python-dotenv==1.2.1
+whitenoise==6.11.0
+waitress==3.0.2
+numpy==2.5.3
+opencv-python==5.0.0.93

@@ -1,0 +1,18 @@
+{% load static %}
+<header class="bar">
+  <div class="brand">
+    <div class="brand__mark"><img src="{% static 'professor-rashidah-mark.webp' %}" alt=""></div>
+    <div class="brand__text">
+      <p class="brand__name">The Academic Mirror</p>
+      <p class="brand__event">{{ event.event_title }} · {{ event.event_date|date:"j F Y" }}</p>
+    </div>
+  </div>
+  {% if step %}
+  <div class="steps">
+    <p class="steps__label">Step {{ step }} of 4 · <strong>{{ label }}</strong></p>
+    <div class="steps__track" role="img" aria-label="Step {{ step }} of 4">
+      <span class="is-done"></span><span class="{% if step >= 2 %}is-done{% endif %}"></span><span class="{% if step >= 3 %}is-done{% endif %}"></span><span class="{% if step >= 4 %}is-done{% endif %}"></span>
+    </div>
+  </div>
+  {% endif %}
+</header>

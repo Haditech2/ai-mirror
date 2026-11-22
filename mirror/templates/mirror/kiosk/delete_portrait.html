@@ -1,0 +1,22 @@
+{% extends "mirror/kiosk/base.html" %}
+{% block title %}Delete your portrait · The Academic Mirror{% endblock %}
+{% block inactivity %}true{% endblock %}
+{% block screen %}
+<section class="screen">
+  {% include "mirror/includes/kiosk_header.html" with step=4 label="Keep it" %}
+  <div class="screen__body">
+    <div class="end">
+      <h1 class="h1">Delete this portrait?</h1>
+      <p class="lead">This removes the generated portrait from the kiosk and disables its QR and download links.</p>
+      {% if delete_error %}<p role="alert">{{ delete_error }}</p>{% endif %}
+      <div class="actions actions--split">
+        <a class="btn btn--secondary" href="{% url 'guest:portrait-result' portrait.pk %}">Keep portrait</a>
+        <form method="post" action="{% url 'guest:portrait-delete' portrait.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--primary">Delete portrait</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
