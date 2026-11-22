@@ -3,11 +3,17 @@ from __future__ import annotations
 import io
 import os
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from tempfile import TemporaryDirectory
 
 from django.conf import settings
+from django.db.models import Count, Sum
+from django.db.models.functions import Length
 from PIL import Image, ImageOps, UnidentifiedImageError
+
+from mirror.models import StoredImageBlob
 
 
 class InvalidImageError(ValueError):
@@ -38,6 +44,42 @@ class ImageStorage:
         if self.root not in target.parents and target != self.root:
             raise ValueError("Invalid storage path")
         return target
+
+    def open(self, relative_path: str):
+        if settings.DATABASE_IMAGE_STORAGE:
+            content = StoredImageBlob.objects.filter(pk=relative_path).values_list("content", flat=True).first()
+            if content is None:
+                raise FileNotFoundError(relative_path)
+            return io.BytesIO(content)
+        return self.absolute(relative_path).open("rb")
+
+    def exists(self, relative_path: str) -> bool:
+        if settings.DATABASE_IMAGE_STORAGE:
+            return StoredImageBlob.objects.filter(pk=relative_path).exists()
+        return self.absolute(relative_path).is_file()
+
+    @contextmanager
+    def local_path(self, relative_path: str):
+        if not settings.DATABASE_IMAGE_STORAGE:
+            yield self.absolute(relative_path)
+            return
+        with TemporaryDirectory(prefix="academic-mirror-") as directory, self.open(relative_path) as source:
+            path = Path(directory) / PurePosixPath(relative_path).name
+            path.write_bytes(source.read())
+            yield path
+
+    def write(self, relative_path: str, content: bytes) -> None:
+        if settings.DATABASE_IMAGE_STORAGE:
+            StoredImageBlob.objects.update_or_create(pk=relative_path, defaults={"content": content})
+            return
+        destination = self.absolute(relative_path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_suffix(f"{destination.suffix}.{uuid.uuid4()}.tmp")
+        try:
+            temporary.write_bytes(content)
+            os.replace(temporary, destination)
+        finally:
+            temporary.unlink(missing_ok=True)
 
     def _open_validated(self, data: bytes) -> Image.Image:
         if not data:
@@ -88,15 +130,14 @@ class ImageStorage:
             extension, mime = ".jpg", "image/jpeg"
 
         relative = f"{category}/{uuid.uuid4()}{extension}"
-        destination = self.absolute(relative)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        temporary = destination.with_suffix(destination.suffix + ".tmp")
-        if preserve_alpha:
-            image.save(temporary, format="PNG", optimize=True, compress_level=7)
-        else:
-            image.save(temporary, format="JPEG", quality=92, optimize=True, progressive=True)
-        os.replace(temporary, destination)
-        return StoredImage(relative, mime, image.width, image.height, destination.stat().st_size)
+        with io.BytesIO() as output:
+            if preserve_alpha:
+                image.save(output, format="PNG", optimize=True, compress_level=7)
+            else:
+                image.save(output, format="JPEG", quality=92, optimize=True, progressive=True)
+            content = output.getvalue()
+        self.write(relative, content)
+        return StoredImage(relative, mime, image.width, image.height, len(content))
 
     def save_upload(self, upload, category: str, **kwargs) -> StoredImage:
         maximum = settings.MAX_UPLOAD_MB * 1024 * 1024
@@ -105,15 +146,22 @@ class ImageStorage:
             raise InvalidImageError(f"Images must be smaller than {settings.MAX_UPLOAD_MB} MB.")
         return self.save(data, category, **kwargs)
 
-    def delete(self, relative_path: str | None) -> None:
+    def delete(self, relative_path: str | None, *, strict: bool = False) -> None:
         if not relative_path:
+            return
+        if settings.DATABASE_IMAGE_STORAGE:
+            StoredImageBlob.objects.filter(pk=relative_path).delete()
             return
         try:
             self.absolute(relative_path).unlink(missing_ok=True)
         except (OSError, ValueError):
-            return
+            if strict:
+                raise
 
     def usage(self) -> tuple[int, int]:
+        if settings.DATABASE_IMAGE_STORAGE:
+            stats = StoredImageBlob.objects.aggregate(total=Sum(Length("content")), count=Count("path"))
+            return stats["total"] or 0, stats["count"]
         total = 0
         count = 0
         for path in self.root.rglob("*"):

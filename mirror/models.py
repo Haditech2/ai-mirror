@@ -7,6 +7,11 @@ from django.db import models
 from django.utils import timezone
 
 
+class StoredImageBlob(models.Model):
+    path = models.CharField(max_length=500, primary_key=True)
+    content = models.BinaryField()
+
+
 class EventSettings(models.Model):
     id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
     professor_name = models.CharField(max_length=180, default="Professor Rashidah Funke Olarenwaju")

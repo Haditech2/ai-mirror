@@ -25,7 +25,8 @@ SECRET_KEY = os.getenv(
     "SECRET_KEY",
     "development-only-change-this-django-secret-before-production",
 )
-DEBUG = env_bool("DEBUG", not env_bool("VERCEL"))
+IS_VERCEL = env_bool("VERCEL")
+DEBUG = env_bool("DEBUG", not IS_VERCEL)
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
 ALLOWED_HOSTS = [item.strip() for item in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,*").split(",") if item.strip()]
 CSRF_TRUSTED_ORIGINS = [
@@ -117,6 +118,7 @@ STORAGES = {
 }
 
 PRIVATE_STORAGE_ROOT = Path(os.getenv("PRIVATE_STORAGE_ROOT", "storage"))
+DATABASE_IMAGE_STORAGE = env_bool("DATABASE_IMAGE_STORAGE", IS_VERCEL)
 if not PRIVATE_STORAGE_ROOT.is_absolute():
     PRIVATE_STORAGE_ROOT = BASE_DIR / PRIVATE_STORAGE_ROOT
 
@@ -156,7 +158,7 @@ FASHN_MODEL_NAME = os.getenv("FASHN_MODEL_NAME", "tryon-v1.6")
 GENERATION_WORKERS = max(1, env_int("GENERATION_WORKERS", 2))
 GENERATION_TIMEOUT_SECONDS = env_int("GENERATION_TIMEOUT_SECONDS", 150)
 GENERATION_MAX_RETRIES = max(0, env_int("GENERATION_MAX_RETRIES", 2))
-GENERATION_INLINE = env_bool("GENERATION_INLINE", False)
+GENERATION_INLINE = env_bool("GENERATION_INLINE", IS_VERCEL)
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_MB * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = (MAX_UPLOAD_MB + 1) * 1024 * 1024

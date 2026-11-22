@@ -3,6 +3,7 @@ import sys
 import threading
 
 from django.apps import AppConfig
+from django.conf import settings
 
 
 class MirrorConfig(AppConfig):
@@ -12,6 +13,8 @@ class MirrorConfig(AppConfig):
     def ready(self) -> None:
         from . import signals  # noqa: F401
 
+        if settings.IS_VERCEL:
+            return
         command = sys.argv[1] if len(sys.argv) > 1 else ""
         if command in {"makemigrations", "migrate", "test", "check", "collectstatic", "shell"}:
             return

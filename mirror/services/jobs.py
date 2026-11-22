@@ -4,6 +4,7 @@ import logging
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import ExitStack
 from datetime import timedelta
 from pathlib import Path
 from uuid import UUID
@@ -133,22 +134,25 @@ def process_job(job_id: UUID | str) -> None:
                         user_message="The source photograph is no longer available. Please take another photo.",
                     )
                 gown = job.portrait.gown
-                request = TryOnInput(
-                    person_image=storage.absolute(photo_path),
-                    garment_image=storage.absolute(gown.image_path),
-                    garment_description=(
-                        f"Academic ceremonial gown: {gown.name}. {gown.description}. "
-                        "Preserve the person's face, natural skin tone, hands, pose, body proportions "
-                        "and original background. Realistic fabric, fit, folds, lighting and shadows."
-                    ),
-                    category="dresses",
-                    cap_image=storage.absolute(gown.cap_image_path) if gown.cap_image_path else None,
-                )
-                result = provider.generate(request)
-                # OpenAI edits the gown and cap in one image without a second local composite.
-                image_bytes = result.image_bytes
-                if result.provider != "openai":
-                    image_bytes = _finish_portrait(request.person_image, image_bytes, gown, job.pk)
+                with ExitStack() as files:
+                    cap = None
+                    if gown.cap_image_path and storage.exists(gown.cap_image_path):
+                        cap = files.enter_context(storage.local_path(gown.cap_image_path))
+                    request = TryOnInput(
+                        person_image=files.enter_context(storage.local_path(photo_path)),
+                        garment_image=files.enter_context(storage.local_path(gown.image_path)),
+                        garment_description=(
+                            f"Academic ceremonial gown: {gown.name}. {gown.description}. "
+                            "Preserve the person's face, natural skin tone, hands, pose, body proportions "
+                            "and original background. Realistic fabric, fit, folds, lighting and shadows."
+                        ),
+                        category="dresses",
+                        cap_image=cap,
+                    )
+                    result = provider.generate(request)
+                    image_bytes = result.image_bytes
+                    if result.provider != "openai":
+                        image_bytes = _finish_portrait(request.person_image, image_bytes, cap, job.pk)
                 stored = storage.save(
                     image_bytes,
                     "portraits",
@@ -190,12 +194,8 @@ def process_job(job_id: UUID | str) -> None:
         close_old_connections()
 
 
-def _finish_portrait(person_image: Path, generated: bytes, gown: Gown, job_id: UUID | str) -> bytes:
+def _finish_portrait(person_image: Path, generated: bytes, cap_path: Path | None, job_id: UUID | str) -> bytes:
     """Put the guest's real face back on the AI output (so only the gown changes) and add the cap."""
-    cap_path = storage.absolute(gown.cap_image_path) if gown.cap_image_path else None
-    if cap_path is not None and not cap_path.exists():
-        logger.warning("Cap image for gown %s is missing; portrait will have no cap", gown.pk)
-        cap_path = None
     try:
         locked = lock_faces(person_image, generated, cap_path)
     except Exception:

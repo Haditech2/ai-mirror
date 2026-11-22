@@ -131,7 +131,8 @@ def _render_camera(request: HttpRequest, form: CaptureForm) -> HttpResponse:
 def _photo_too_close(relative_path: str) -> bool:
     """Free check before any try-on credit is spent; never blocks a guest if it fails."""
     try:
-        return too_close(storage.absolute(relative_path))
+        with storage.local_path(relative_path) as path:
+            return too_close(path)
     except Exception:
         logger.exception("Framing check failed; accepting the photo")
         return False
@@ -159,10 +160,7 @@ def capture_preview(request: HttpRequest, photo_id) -> FileResponse:
     )
     if not photo.storage_path:
         raise Http404("Photograph no longer available")
-    path = storage.absolute(photo.storage_path)
-    if not path.exists():
-        raise Http404("Photograph no longer available")
-    response = FileResponse(path.open("rb"), content_type=photo.mime_type)
+    response = FileResponse(_open_image(photo.storage_path), content_type=photo.mime_type)
     response.headers["Cache-Control"] = "private, no-store, max-age=0"
     return response
 
@@ -350,7 +348,7 @@ def portrait_delete(request: HttpRequest, portrait_id) -> HttpResponse:
 
     try:
         if portrait.storage_path:
-            storage.absolute(portrait.storage_path).unlink(missing_ok=True)
+            storage.delete(portrait.storage_path, strict=True)
     except (OSError, ValueError):
         logger.exception("Could not delete portrait %s", portrait.pk)
         context["delete_error"] = "The portrait could not be deleted. Please try again."
@@ -384,12 +382,9 @@ def portrait_file(request: HttpRequest, portrait_id) -> FileResponse:
     )
     if not portrait.storage_path:
         raise Http404("This portrait is no longer available.")
-    path = storage.absolute(portrait.storage_path)
-    if not path.exists():
-        raise Http404("This portrait is no longer available.")
     disposition = "inline" if payload.get("disposition") == "inline" else "attachment"
     response = FileResponse(
-        path.open("rb"),
+        _open_image(portrait.storage_path),
         content_type=portrait.mime_type or "image/jpeg",
         as_attachment=disposition == "attachment",
         filename=f"academic-portrait-{str(portrait.pk)[:8]}.jpg",
@@ -425,10 +420,7 @@ def complete(request: HttpRequest) -> HttpResponse:
 @cache_control(public=True, max_age=2_592_000, immutable=True)
 def gown_image(request: HttpRequest, gown_id) -> FileResponse:
     gown = get_object_or_404(Gown, pk=gown_id, is_archived=False)
-    path = storage.absolute(gown.image_path)
-    if not path.exists():
-        raise Http404("Gown image not found")
-    return FileResponse(path.open("rb"), content_type=gown.image_mime)
+    return FileResponse(_open_image(gown.image_path), content_type=gown.image_mime)
 
 
 @require_GET
@@ -437,10 +429,7 @@ def gown_cap_image(request: HttpRequest, gown_id) -> FileResponse:
     gown = get_object_or_404(Gown, pk=gown_id, is_archived=False)
     if not gown.cap_image_path:
         raise Http404("This gown has no cap")
-    path = storage.absolute(gown.cap_image_path)
-    if not path.exists():
-        raise Http404("Cap image not found")
-    return FileResponse(path.open("rb"), content_type="image/png")
+    return FileResponse(_open_image(gown.cap_image_path), content_type="image/png")
 
 
 @require_GET
@@ -452,7 +441,12 @@ def event_asset(request: HttpRequest, kind: str) -> FileResponse:
     relative = event.logo_path if kind == "logo" else event.background_path
     if not relative:
         raise Http404("Asset not found")
-    path = storage.absolute(relative)
-    if not path.exists():
-        raise Http404("Asset not found")
-    return FileResponse(path.open("rb"))
+    content = _open_image(relative)
+    return FileResponse(content, filename=relative.rsplit("/", 1)[-1])
+
+
+def _open_image(relative_path: str):
+    try:
+        return storage.open(relative_path)
+    except FileNotFoundError as exc:
+        raise Http404("Image no longer available.") from exc

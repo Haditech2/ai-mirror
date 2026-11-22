@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import re
-import shutil
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -12,6 +12,7 @@ from django.dispatch import receiver
 from mirror.models import EventSettings, Gown
 from mirror.security import encrypt_secret
 from mirror.services.sample_assets import create_sample_gown
+from mirror.storage import storage
 
 SAMPLE_GOWNS = [
     (
@@ -114,14 +115,15 @@ def seed_initial_data(sender, **kwargs) -> None:
             is_staff=True,
         )
 
-    gown_root = Path(settings.PRIVATE_STORAGE_ROOT) / "gowns"
-    gown_root.mkdir(parents=True, exist_ok=True)
     for order, (name, color, description, base, accent, distinguished) in enumerate(SAMPLE_GOWNS, 1):
         slug = _slug(name)
         filename = f"{slug}.png"
-        path = gown_root / filename
-        if not path.exists():
-            create_sample_gown(path, base, accent, distinguished)
+        relative = f"gowns/{filename}"
+        if not storage.exists(relative):
+            with TemporaryDirectory(prefix="academic-mirror-gown-") as folder:
+                path = Path(folder) / filename
+                create_sample_gown(path, base, accent, distinguished)
+                storage.write(relative, path.read_bytes())
         Gown.objects.get_or_create(
             slug=slug,
             defaults={
@@ -139,8 +141,8 @@ def seed_initial_data(sender, **kwargs) -> None:
     for name, color, description, gown_file, cap_file in BUNDLED_GOWNS:
         slug = _slug(name)
         for filename in (gown_file, cap_file):
-            if filename and not (gown_root / filename).exists():
-                shutil.copyfile(ASSET_ROOT / filename, gown_root / filename)
+            if filename and not storage.exists(f"gowns/{filename}"):
+                storage.write(f"gowns/{filename}", (ASSET_ROOT / filename).read_bytes())
         Gown.objects.get_or_create(
             slug=slug,
             defaults={

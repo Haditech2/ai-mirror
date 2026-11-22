@@ -15,6 +15,7 @@ from PIL import Image
 
 from mirror.ai.base import AIResult
 from mirror.models import EventSettings, GeneratedPortrait, Gown
+from mirror.storage import storage
 
 
 def sample_photo(color=(76, 98, 125)) -> bytes:
@@ -134,6 +135,33 @@ class GuestJourneyTests(TransactionTestCase):
         self.assertEqual(portrait.status, GeneratedPortrait.Status.DELETED)
         self.assertFalse(image_path.exists())
         self.assertEqual(self.client.get(f"/portrait/{portrait.pk}/file/?token={token}").status_code, 404)
+
+    @override_settings(DATABASE_IMAGE_STORAGE=True)
+    def test_database_storage_supports_capture_generation_and_download(self) -> None:
+        gown = Gown.objects.filter(is_enabled=True, is_archived=False).first()
+        storage.write(gown.image_path, sample_photo())
+        self._capture_and_select()
+
+        class ContractProvider:
+            name = "openai"
+
+            def generate(self, request):
+                assert request.person_image.is_file() and request.garment_image.is_file()
+                return AIResult(sample_photo(), "db-storage-test", self.name)
+
+        with patch("mirror.services.jobs.build_provider", return_value=ContractProvider()):
+            response = self.client.post("/portrait/generate/", follow=True)
+        self.assertContains(response, "Save portrait")
+        portrait = GeneratedPortrait.objects.latest("created_at")
+        path = portrait.storage_path
+        self.assertTrue(storage.exists(path))
+        self.assertFalse((self.storage_root / path).exists())
+        token = response.content.decode().split("token=", 1)[1].split('"', 1)[0]
+        download = self.client.get(f"/portrait/{portrait.pk}/file/?token={token}")
+        self.assertEqual(download.status_code, 200)
+        download.close()
+        self.client.post(f"/portrait/{portrait.pk}/delete/")
+        self.assertFalse(storage.exists(path))
 
     def test_selected_gown_portrait_keeps_the_guests_own_face(self) -> None:
         from mirror.ai.face_lock import detect_faces
