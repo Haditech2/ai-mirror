@@ -31,6 +31,15 @@
       <p id="captured-label" class="stage__tag chip chip--ok hidden"><span class="dot"></span> Photo taken</p>
     </div>
     {% if form.errors %}<p class="notice notice--error" role="alert">{{ form.photo.errors|striptags|default:"The photo could not be saved. Take it again." }}</p>{% endif %}
+    <div id="camera-options" class="actions actions--split">
+      <label id="camera-picker" class="hidden">
+        Camera
+        <select id="camera-device" class="btn btn--secondary">
+          <option value="">System default</option>
+        </select>
+      </label>
+      <button id="camera-upload" type="button" class="btn btn--secondary">Choose a photo</button>
+    </div>
     <div id="capture-controls" class="actions">
       <form method="post" action="{% url 'guest:end-session' %}">{% csrf_token %}<input type="hidden" name="reason" value="cancelled"><button class="btn btn--secondary" type="submit">Cancel</button></form>
       <button id="capture-button" type="button" class="btn btn--primary" disabled>Take photo</button>

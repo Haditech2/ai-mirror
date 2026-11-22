@@ -14,6 +14,10 @@
   const captureControls = document.getElementById('capture-controls')
   const previewControls = document.getElementById('preview-controls')
   const captureButton = document.getElementById('capture-button')
+  const cameraOptions = document.getElementById('camera-options')
+  const cameraPicker = document.getElementById('camera-picker')
+  const cameraDevice = document.getElementById('camera-device')
+  const choosePhoto = document.getElementById('camera-upload')
   const retryButton = document.getElementById('camera-retry')
   const retakeButton = document.getElementById('retake-button')
   const acceptButton = document.getElementById('accept-photo-button')
@@ -44,6 +48,22 @@
     video.srcObject = null
   }
 
+  async function refreshCameras() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const cameras = devices.filter(device => device.kind === 'videoinput' && device.deviceId)
+      const selected = cameraDevice.value
+      cameraDevice.replaceChildren(new Option('System default', ''))
+      cameras.forEach((camera, index) => {
+        cameraDevice.add(new Option(camera.label || `Camera ${index + 1}`, camera.deviceId))
+      })
+      cameraDevice.value = cameras.some(camera => camera.deviceId === selected) ? selected : ''
+      cameraPicker.classList.toggle('hidden', cameras.length < 2)
+    } catch {
+      // The camera can still work if the browser does not expose a device list.
+    }
+  }
+
   async function start() {
     stop()
     hide(errorPanel)
@@ -51,11 +71,16 @@
     captureButton.disabled = true
     report('requesting')
     if (!navigator.mediaDevices?.getUserMedia) {
-      return fail('unavailable', 'This browser does not provide camera access. Use Chrome or Edge over HTTPS.')
+      return fail('unavailable', 'Live camera access requires a supported browser over HTTPS. You can choose a photo below.')
     }
+    cameraDevice.disabled = true
+    retryButton.disabled = true
     try {
+      const deviceId = cameraDevice.value
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1920, min: 720 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30 } },
+        video: deviceId
+          ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+          : { facingMode: { ideal: 'user' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       })
       video.srcObject = stream
@@ -71,9 +96,13 @@
         denied
           ? 'Camera access is blocked. Allow the camera in the browser, then try again.'
           : unavailable
-            ? 'No suitable camera was found. Please ask an event host for assistance.'
+            ? 'The selected camera is unavailable. Try another camera or choose a photo below.'
             : 'The camera could not be started. Check the connection and try again.',
       )
+    } finally {
+      await refreshCameras()
+      cameraDevice.disabled = false
+      retryButton.disabled = false
     }
   }
 
@@ -85,6 +114,7 @@
     errorMessage.textContent = message
     show(errorPanel)
     captureButton.disabled = true
+    cameraOptions.classList.remove('hidden')
     report(status)
   }
 
@@ -92,6 +122,7 @@
     if (!stream || busy || !video.videoWidth) return
     busy = true
     captureButton.disabled = true
+    cameraOptions.classList.add('hidden')
     show(countdown)
     for (let number = 3; number >= 1; number -= 1) {
       countdownNumber.textContent = String(number)
@@ -143,6 +174,7 @@
     video.classList.remove('hidden')
     hide(capturedLabel, 'block')
     captureControls.classList.remove('hidden')
+    cameraOptions.classList.remove('hidden')
     previewControls.classList.add('hidden')
     start()
   }
@@ -159,6 +191,12 @@
   }
 
   captureButton.addEventListener('click', () => takePhoto().catch(() => fail('error', 'We could not capture that frame. Please hold still and try once more.')))
+  cameraDevice.addEventListener('change', start)
+  choosePhoto.addEventListener('click', () => uploadInput.click())
+  uploadInput.addEventListener('change', () => {
+    if (uploadInput.files.length) uploadForm.requestSubmit()
+  })
+  navigator.mediaDevices?.addEventListener?.('devicechange', refreshCameras)
   retryButton.addEventListener('click', start)
   retakeButton.addEventListener('click', retake)
   acceptButton.addEventListener('click', accept)
