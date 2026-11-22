@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,7 +25,7 @@ SECRET_KEY = os.getenv(
     "SECRET_KEY",
     "development-only-change-this-django-secret-before-production",
 )
-DEBUG = env_bool("DEBUG", True)
+DEBUG = env_bool("DEBUG", not env_bool("VERCEL"))
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
 ALLOWED_HOSTS = [item.strip() for item in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,*").split(",") if item.strip()]
 CSRF_TRUSTED_ORIGINS = [
@@ -84,6 +85,11 @@ DATABASES = {
         "OPTIONS": {"timeout": 20},
     }
 }
+database_url = os.getenv("DATABASE_URL", "").strip()
+if database_url:
+    DATABASES["default"] = dj_database_url.parse(
+        database_url, conn_max_age=0, disable_server_side_cursors=True
+    )
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
