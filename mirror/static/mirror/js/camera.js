@@ -58,7 +58,7 @@
         cameraDevice.add(new Option(camera.label || `Camera ${index + 1}`, camera.deviceId))
       })
       cameraDevice.value = cameras.some(camera => camera.deviceId === selected) ? selected : ''
-      cameraPicker.classList.toggle('hidden', cameras.length < 2)
+      cameraPicker.classList.toggle('hidden', cameras.length === 0)
     } catch {
       // The camera can still work if the browser does not expose a device list.
     }
@@ -78,9 +78,7 @@
     try {
       const deviceId = cameraDevice.value
       stream = await navigator.mediaDevices.getUserMedia({
-        video: deviceId
-          ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-          : { facingMode: { ideal: 'user' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: deviceId ? { deviceId: { exact: deviceId } } : true,
         audio: false,
       })
       video.srcObject = stream
@@ -96,7 +94,7 @@
         denied
           ? 'Camera access is blocked. Allow the camera in the browser, then try again.'
           : unavailable
-            ? 'The selected camera is unavailable. Try another camera or choose a photo below.'
+            ? 'The browser could not find a usable camera. Reconnect the camera, try again, or choose a photo below.'
             : 'The camera could not be started. Check the connection and try again.',
       )
     } finally {
