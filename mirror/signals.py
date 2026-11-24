@@ -70,6 +70,30 @@ ASSET_ROOT = Path(__file__).resolve().parent / "assets" / "gowns"
 # Real product photographs shipped with the app: (name, colour, description, gown file, cap file).
 BUNDLED_GOWNS = [
     (
+        "Azure & Gold Academic Gown",
+        "Azure Blue & Gold",
+        "An azure blue satin academic gown with broad pale gold front panels and fine gold piping, "
+        "paired with a rounded blue tam and a long gold tassel.",
+        "azure-gold-academic-gown.png",
+        "azure-academic-tam.png",
+    ),
+    (
+        "Green & Gold Graduation Gown",
+        "Green & Gold",
+        "An emerald green graduation robe with broad gold front panels and a single crest, "
+        "paired with a green mortarboard with a gold band and tassel.",
+        "green-gold-graduation-gown.png",
+        "green-gold-mortarboard.png",
+    ),
+    (
+        "Black & Crimson Doctoral Gown",
+        "Black & Crimson",
+        "A black academic gown with a crimson satin V-yoke, crimson front trim, a single chest crest, "
+        "and a matching crimson velvet tam with a gold tassel.",
+        "black-crimson-doctoral-gown.png",
+        "crimson-doctoral-tam.png",
+    ),
+    (
         "Royal Blue Graduation Gown & Cap",
         "Royal Blue",
         "A royal blue graduation gown with silver-white embroidered front panels, a scarlet satin "
