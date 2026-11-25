@@ -7,7 +7,6 @@ from mirror.security import decrypt_secret
 
 from .base import AIProviderError, VirtualTryOnProvider
 from .fashn import FashnTryOnProvider
-from .openai import OpenAIImageProvider
 from .replicate import ReplicateIDMVTONProvider
 
 
@@ -41,6 +40,8 @@ def build_provider(event: EventSettings) -> VirtualTryOnProvider:
             timeout_seconds=settings.GENERATION_TIMEOUT_SECONDS,
         )
     if provider == "openai":
+        from .openai import OpenAIImageProvider
+
         return OpenAIImageProvider(key, settings.OPENAI_IMAGE_MODEL, settings.GENERATION_TIMEOUT_SECONDS)
     if provider == "fashn":
         return FashnTryOnProvider(

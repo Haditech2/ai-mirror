@@ -18,7 +18,6 @@ from django.views.decorators.cache import cache_control, never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from mirror.ai import provider_configuration
-from mirror.ai.framing import TOO_CLOSE_MESSAGE, too_close
 from mirror.forms import CaptureForm, ConsentForm, GownSelectionForm
 from mirror.models import CapturedPhoto, EventSettings, GeneratedPortrait, GenerationJob, Gown
 from mirror.security import create_portrait_token, decode_portrait_token
@@ -35,13 +34,8 @@ from mirror.storage import InvalidImageError, storage
 logger = logging.getLogger(__name__)
 
 
-def _event_context() -> dict[str, object]:
-    event = EventSettings.load()
-    provider, key = provider_configuration(event)
-    return {
-        "event": event,
-        "ai_available": provider in {"replicate", "fashn", "openai"} and bool(key),
-    }
+def _event_context() -> dict[str, EventSettings]:
+    return {"event": EventSettings.load()}
 
 
 def _absolute_url(request: HttpRequest, path: str) -> str:
@@ -61,9 +55,7 @@ def _qr_data_uri(value: str) -> str:
 @require_GET
 @never_cache
 def welcome(request: HttpRequest) -> HttpResponse:
-    context = _event_context()
-    context["active_guest"] = bool(current_guest(request, touch=False))
-    return render(request, "mirror/kiosk/welcome.html", context)
+    return render(request, "mirror/kiosk/welcome.html", _event_context())
 
 
 @require_http_methods(["GET", "POST"])
@@ -85,6 +77,8 @@ def consent(request: HttpRequest) -> HttpResponse:
 @never_cache
 def camera(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
+        from mirror.ai.framing import TOO_CLOSE_MESSAGE
+
         form = CaptureForm(request.POST, request.FILES)
         if form.is_valid():
             upload = form.cleaned_data["photo"]
@@ -129,6 +123,8 @@ def _render_camera(request: HttpRequest, form: CaptureForm) -> HttpResponse:
 
 
 def _photo_too_close(relative_path: str) -> bool:
+    from mirror.ai.framing import too_close
+
     """Free check before any try-on credit is spent; never blocks a guest if it fails."""
     try:
         with storage.local_path(relative_path) as path:
@@ -222,8 +218,14 @@ def fitting(request: HttpRequest) -> HttpResponse:
         photo, gown = _active_photo_and_gown(request)
     except Http404:
         return redirect("guest:gowns")
-    context = _event_context()
-    context.update({"photo": photo, "gown": gown})
+    event = EventSettings.load()
+    provider, key = provider_configuration(event)
+    context = {
+        "event": event,
+        "photo": photo,
+        "gown": gown,
+        "ai_available": provider in {"replicate", "fashn", "openai"} and bool(key),
+    }
     return render(request, "mirror/kiosk/fitting.html", context)
 
 

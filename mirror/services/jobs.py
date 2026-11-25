@@ -15,7 +15,6 @@ from django.db.models import F
 from django.utils import timezone
 
 from mirror.ai import AIProviderError, TryOnInput, build_provider
-from mirror.ai.face_lock import lock_faces
 from mirror.models import CapturedPhoto, EventSettings, GeneratedPortrait, GenerationJob, Gown, GuestSession
 from mirror.storage import InvalidImageError, storage
 
@@ -197,6 +196,8 @@ def process_job(job_id: UUID | str) -> None:
 def _finish_portrait(person_image: Path, generated: bytes, cap_path: Path | None, job_id: UUID | str) -> bytes:
     """Put the guest's real face back on the AI output (so only the gown changes) and add the cap."""
     try:
+        from mirror.ai.face_lock import lock_faces
+
         locked = lock_faces(person_image, generated, cap_path)
     except Exception:
         # Never lose a finished portrait over post-processing; the storage layer still

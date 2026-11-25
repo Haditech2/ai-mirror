@@ -20,7 +20,6 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from PIL import Image, UnidentifiedImageError
 
 from mirror.ai import provider_configuration
-from mirror.ai.cap import cut_out_plain_background
 from mirror.forms import ConsoleAuthenticationForm, EventSettingsForm, GownForm
 from mirror.models import CapturedPhoto, EventSettings, GeneratedPortrait, GenerationJob, Gown, GuestSession
 from mirror.security import create_portrait_token, encrypt_secret
@@ -144,6 +143,8 @@ def gown_edit(request: HttpRequest, gown_id) -> HttpResponse:
 
 def _save_cap(upload):
     """Store a cap image as a transparent PNG, cutting out a plain white background if needed."""
+    from mirror.ai.cap import cut_out_plain_background
+
     maximum = django_settings.MAX_UPLOAD_MB * 1024 * 1024
     data = upload.read(maximum + 1)
     if len(data) > maximum:
