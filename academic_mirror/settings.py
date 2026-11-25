@@ -146,6 +146,7 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eventadmin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-me-before-production")
 
 AI_PROVIDER = os.getenv("AI_PROVIDER", "disabled")
+AI_PROVIDER_OVERRIDE = os.getenv("AI_PROVIDER_OVERRIDE", "").strip()
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_IMAGE_MODEL = os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-2")

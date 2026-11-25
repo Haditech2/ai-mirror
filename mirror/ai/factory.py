@@ -11,9 +11,12 @@ from .replicate import ReplicateIDMVTONProvider
 
 
 def provider_configuration(event: EventSettings) -> tuple[str, str | None]:
-    provider = (event.ai_provider or settings.AI_PROVIDER or "disabled").lower()
+    override = settings.AI_PROVIDER_OVERRIDE.lower()
+    provider = (override or event.ai_provider or settings.AI_PROVIDER or "disabled").lower()
     saved_key = decrypt_secret(event.ai_api_key_encrypted)
     if provider == "openai":
+        if override and settings.OPENAI_API_KEY:
+            return provider, settings.OPENAI_API_KEY
         return provider, (saved_key if saved_key and saved_key.startswith("sk-") else settings.OPENAI_API_KEY or None)
     key = saved_key if saved_key and not saved_key.startswith("sk-") else settings.AI_API_KEY or None
     return provider, key
